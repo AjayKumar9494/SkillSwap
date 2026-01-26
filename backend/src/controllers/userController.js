@@ -49,4 +49,3 @@ export const updateLastSeen = asyncHandler(async (req, res) => {
   await req.user.save();
   res.json({ message: "Last seen updated", lastSeen: req.user.lastSeen });
 });
-
