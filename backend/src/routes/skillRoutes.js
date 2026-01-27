@@ -8,7 +8,9 @@ import {
   getSkillVideoAccess,
   getSkillVideoViews,
   getMyVideoUnlocks,
+  getMyUploadedVideos,
   listSkills,
+  removeVideoAccess,
   streamSkillVideo,
   unlockSkillVideo,
   updateSkill,
@@ -39,12 +41,21 @@ router.get("/", listSkills);
 // Get user's video unlocks
 router.get("/video-unlocks", requireAuth, getMyVideoUnlocks);
 
+// Get user's uploaded offline videos
+router.get("/uploaded-videos", requireAuth, getMyUploadedVideos);
+
 // Offline video unlock + streaming (declare before :id for readability)
 router.get(
   "/:id/video-access",
   requireAuth,
   [param("id").isMongoId().withMessage("Invalid id"), validate],
   getSkillVideoAccess
+);
+router.delete(
+  "/:id/video-access",
+  requireAuth,
+  [param("id").isMongoId().withMessage("Invalid id"), validate],
+  removeVideoAccess
 );
 router.get(
   "/:id/video-views",

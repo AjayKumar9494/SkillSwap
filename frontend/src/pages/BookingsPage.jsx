@@ -74,7 +74,9 @@ const BookingsPage = () => {
       : "pending";
   });
   const [videoUnlocks, setVideoUnlocks] = useState([]);
+  const [uploadedVideos, setUploadedVideos] = useState([]);
   const [videoViewCounts, setVideoViewCounts] = useState({});
+  const [videoSubTab, setVideoSubTab] = useState("downloaded"); // "uploaded" or "downloaded"
 
   // Update active tab when URL query parameter changes
   useEffect(() => {
@@ -123,17 +125,28 @@ const BookingsPage = () => {
   const fetchVideoUnlocks = async () => {
     setError("");
     try {
-      const { data } = await api.get("/skills/video-unlocks");
-      setVideoUnlocks(data);
+      const [unlocksData, uploadedData] = await Promise.all([
+        api.get("/skills/video-unlocks"),
+        api.get("/skills/uploaded-videos")
+      ]);
       
-      // Fetch view counts for each unlocked video
-      const viewCountPromises = data.map(async (unlock) => {
-        if (!unlock.skill?._id) return { skillId: null, views: 0 };
+      setVideoUnlocks(unlocksData.data);
+      setUploadedVideos(uploadedData.data);
+      
+      // Combine all videos for view count fetching
+      const allVideos = [
+        ...unlocksData.data.map(u => ({ skillId: u.skill?._id })),
+        ...uploadedData.data.map(u => ({ skillId: u.skill?._id }))
+      ];
+      
+      // Fetch view counts for each video
+      const viewCountPromises = allVideos.map(async ({ skillId }) => {
+        if (!skillId) return { skillId: null, views: 0 };
         try {
-          const { data: viewsData } = await api.get(`/skills/${unlock.skill._id}/video-views`);
-          return { skillId: unlock.skill._id, views: viewsData?.views || 0 };
+          const { data: viewsData } = await api.get(`/skills/${skillId}/video-views`);
+          return { skillId, views: viewsData?.views || 0 };
         } catch {
-          return { skillId: unlock.skill._id, views: 0 };
+          return { skillId, views: 0 };
         }
       });
       const viewCountResults = await Promise.all(viewCountPromises);
@@ -145,7 +158,35 @@ const BookingsPage = () => {
       });
       setVideoViewCounts(countsMap);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to load video unlocks");
+      setError(err.response?.data?.message || "Failed to load videos");
+    }
+  };
+
+  const handleDeleteDownloadedVideo = async (skillId) => {
+    if (!window.confirm("Are you sure you want to remove this video from your downloads? This will remove your access to the video.")) {
+      return;
+    }
+    try {
+      await api.delete(`/skills/${skillId}/video-access`);
+      setNotice("Video access removed successfully");
+      setTimeout(() => setNotice(""), 3000);
+      await fetchVideoUnlocks();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to remove video access");
+    }
+  };
+
+  const handleDeleteUploadedVideo = async (skillId) => {
+    if (!window.confirm("Are you sure you want to delete this video? All learners who unlocked it will be refunded their credits.")) {
+      return;
+    }
+    try {
+      const { data } = await api.delete(`/skills/${skillId}/video`);
+      setNotice(data.message || "Video deleted successfully. Credits have been refunded to learners.");
+      setTimeout(() => setNotice(""), 5000);
+      await fetchVideoUnlocks();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete video");
     }
   };
 
@@ -349,71 +390,185 @@ const BookingsPage = () => {
 
         <div className="space-y-4">
           {activeTab === "videoUnlocks" ? (
-            videoUnlocks.length > 0 ? (
-              videoUnlocks.map((unlock) => {
-                const viewCount = videoViewCounts[unlock.skill?._id] || 0;
-                return (
-                  <div key={unlock._id} className="space-y-3">
-                    <div className="rounded-lg border-2 border-indigo-200 bg-white p-4 shadow-md hover:shadow-lg transition-shadow">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className="bg-indigo-100 text-indigo-700 border border-indigo-300">🎬 Offline Video</Badge>
-                            <span className="text-xs text-slate-500">
-                              Unlocked {new Date(unlock.unlockedAt || unlock.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <h3 className="text-lg font-bold text-slate-900 mb-2">
-                            {unlock.skill?.title || "Skill"}
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm mb-2">
-                            <span className="text-slate-600 font-semibold">
-                              👁️ Views: <span className="text-indigo-600">{viewCount}</span>
-                            </span>
-                            <span className="text-slate-600">
-                              👨‍🏫 Teacher: <span className="font-semibold">{unlock.teacher?.name}</span>
-                            </span>
-                            <span className="text-slate-600">
-                              💰 Cost: <span className="font-semibold">{unlock.creditCost} credits</span>
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-600 mb-2 line-clamp-2">
-                            {unlock.skill?.description || ""}
-                          </p>
-                        </div>
-                        {unlock.skill?.thumbnailUrl && (
-                          <div className="flex-shrink-0">
-                            <img
-                              src={`${(import.meta.env.VITE_API_URL || "http://localhost:5000/api").trim().replace(/\/api\/?$/, "")}${unlock.skill.thumbnailUrl}`}
-                              alt={unlock.skill.title}
-                              className="w-24 h-24 rounded-lg object-cover border border-slate-200"
-                              onError={(e) => {
-                                e.target.style.display = "none";
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-slate-200">
-                        <Link to={`/skills/${unlock.skill?._id}`}>
-                          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                            Watch Video →
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-12 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300">
-                <div className="text-5xl mb-3">🎬</div>
-                <p className="text-lg text-slate-600 font-medium">No offline videos unlocked yet</p>
-                <p className="text-sm text-slate-500 mt-1">
-                  Unlock offline videos from the skills marketplace to watch them here
-                </p>
+            <>
+              {/* Sub-tabs for Uploaded and Downloaded */}
+              <div className="flex gap-2 border-b-2 border-slate-200 pb-2">
+                <button
+                  onClick={() => setVideoSubTab("downloaded")}
+                  className={`px-4 py-2 font-semibold text-sm transition-all border-b-2 ${
+                    videoSubTab === "downloaded"
+                      ? "border-purple-600 text-purple-600 bg-purple-50"
+                      : "border-transparent text-slate-600 hover:text-purple-600"
+                  }`}
+                >
+                  📥 Downloaded Videos
+                  {videoUnlocks.length > 0 && (
+                    <Badge className="ml-2 bg-purple-600 text-white">{videoUnlocks.length}</Badge>
+                  )}
+                </button>
+                <button
+                  onClick={() => setVideoSubTab("uploaded")}
+                  className={`px-4 py-2 font-semibold text-sm transition-all border-b-2 ${
+                    videoSubTab === "uploaded"
+                      ? "border-purple-600 text-purple-600 bg-purple-50"
+                      : "border-transparent text-slate-600 hover:text-purple-600"
+                  }`}
+                >
+                  📤 Uploaded Videos
+                  {uploadedVideos.length > 0 && (
+                    <Badge className="ml-2 bg-purple-600 text-white">{uploadedVideos.length}</Badge>
+                  )}
+                </button>
               </div>
-            )
+
+              {/* Display videos based on selected sub-tab */}
+              {videoSubTab === "downloaded" ? (
+                videoUnlocks.length > 0 ? (
+                  videoUnlocks.map((unlock) => {
+                    const viewCount = videoViewCounts[unlock.skill?._id] || 0;
+                    return (
+                      <div key={unlock._id} className="space-y-3">
+                        <div className="rounded-lg border-2 border-indigo-200 bg-white p-4 shadow-md hover:shadow-lg transition-shadow">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge className="bg-indigo-100 text-indigo-700 border border-indigo-300">🎬 Offline Video</Badge>
+                                <span className="text-xs text-slate-500">
+                                  Unlocked {new Date(unlock.unlockedAt || unlock.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                {unlock.skill?.title || "Skill"}
+                              </h3>
+                              <div className="flex items-center gap-4 text-sm mb-2">
+                                <span className="text-slate-600 font-semibold">
+                                  👁️ Views: <span className="text-indigo-600">{viewCount}</span>
+                                </span>
+                                <span className="text-slate-600">
+                                  👨‍🏫 Teacher: <span className="font-semibold">{unlock.teacher?.name}</span>
+                                </span>
+                                <span className="text-slate-600">
+                                  💰 Cost: <span className="font-semibold">{unlock.creditCost} credits</span>
+                                </span>
+                              </div>
+                              <p className="text-sm text-slate-600 mb-2 line-clamp-2">
+                                {unlock.skill?.description || ""}
+                              </p>
+                            </div>
+                            {unlock.skill?.thumbnailUrl && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={`${(import.meta.env.VITE_API_URL || "http://localhost:5000/api").trim().replace(/\/api\/?$/, "")}${unlock.skill.thumbnailUrl}`}
+                                  alt={unlock.skill.title}
+                                  className="w-24 h-24 rounded-lg object-cover border border-slate-200"
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-slate-200 flex items-center gap-2">
+                            <Link to={`/skills/${unlock.skill?._id}`}>
+                              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                                Watch Video →
+                              </Button>
+                            </Link>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                              onClick={() => handleDeleteDownloadedVideo(unlock.skill?._id)}
+                            >
+                              🗑️ Remove
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-12 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300">
+                    <div className="text-5xl mb-3">📥</div>
+                    <p className="text-lg text-slate-600 font-medium">No downloaded videos yet</p>
+                    <p className="text-sm text-slate-500 mt-1">
+                      Unlock offline videos from the skills marketplace to watch them here
+                    </p>
+                  </div>
+                )
+              ) : (
+                uploadedVideos.length > 0 ? (
+                  uploadedVideos.map((item) => {
+                    const viewCount = videoViewCounts[item.skill?._id] || 0;
+                    return (
+                      <div key={item.skill?._id} className="space-y-3">
+                        <div className="rounded-lg border-2 border-green-200 bg-white p-4 shadow-md hover:shadow-lg transition-shadow">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge className="bg-green-100 text-green-700 border border-green-300">📤 Uploaded Video</Badge>
+                                <span className="text-xs text-slate-500">
+                                  Uploaded {new Date(item.unlockedAt || item.skill?.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                {item.skill?.title || "Skill"}
+                              </h3>
+                              <div className="flex items-center gap-4 text-sm mb-2">
+                                <span className="text-slate-600 font-semibold">
+                                  👁️ Total Views: <span className="text-green-600">{viewCount}</span>
+                                </span>
+                                <span className="text-slate-600">
+                                  💰 Cost: <span className="font-semibold">{item.creditCost} credits</span>
+                                </span>
+                              </div>
+                              <p className="text-sm text-slate-600 mb-2 line-clamp-2">
+                                {item.skill?.description || ""}
+                              </p>
+                            </div>
+                            {item.skill?.thumbnailUrl && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={`${(import.meta.env.VITE_API_URL || "http://localhost:5000/api").trim().replace(/\/api\/?$/, "")}${item.skill.thumbnailUrl}`}
+                                  alt={item.skill.title}
+                                  className="w-24 h-24 rounded-lg object-cover border border-slate-200"
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-slate-200 flex items-center gap-2">
+                            <Link to={`/skills/${item.skill?._id}`}>
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                                View Video →
+                              </Button>
+                            </Link>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                              onClick={() => handleDeleteUploadedVideo(item.skill?._id)}
+                            >
+                              🗑️ Delete Video
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-12 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-dashed border-slate-300">
+                    <div className="text-5xl mb-3">📤</div>
+                    <p className="text-lg text-slate-600 font-medium">No uploaded videos yet</p>
+                    <p className="text-sm text-slate-500 mt-1">
+                      Create offline video skills to see them here
+                    </p>
+                  </div>
+                )
+              )}
+            </>
           ) : filteredBookings.length > 0 ? (
             filteredBookings.map((b) => (
             <div key={b._id} className="space-y-3">
@@ -476,9 +631,19 @@ const BookingsPage = () => {
                           </div>
                         );
                       } else if (sessionStart && !hasSessionStarted) {
+                        // Format date in local timezone consistently
+                        const startDate = new Date(sessionStart);
+                        const formattedDate = startDate.toLocaleString('en-US', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        });
                         return (
                           <span className="text-xs text-amber-600 font-semibold">
-                            ⏰ Session starts: {new Date(sessionStart).toLocaleString()}
+                            ⏰ Session starts: {formattedDate}
                           </span>
                         );
                       } else if (hasSessionEnded) {

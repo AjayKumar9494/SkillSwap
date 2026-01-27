@@ -384,3 +384,50 @@ export const getMyVideoUnlocks = asyncHandler(async (req, res) => {
     .sort({ unlockedAt: -1 });
   res.json(unlocks);
 });
+
+// GET /api/skills/uploaded-videos -> get all offline videos uploaded by current user (as teacher)
+export const getMyUploadedVideos = asyncHandler(async (req, res) => {
+  const skills = await Skill.find({ 
+    owner: req.user._id, 
+    mode: "offline",
+    videoUrl: { $exists: true, $ne: "" }
+  })
+    .populate("owner", "name")
+    .sort({ createdAt: -1 });
+  
+  // Get view counts for each skill
+  const skillsWithViews = await Promise.all(
+    skills.map(async (skill) => {
+      const viewsData = await VideoAccess.countDocuments({ skill: skill._id });
+      return {
+        skill: skill,
+        views: viewsData,
+        unlockedAt: skill.createdAt, // Use skill creation date
+        teacher: skill.owner,
+        creditCost: skill.creditCost
+      };
+    })
+  );
+  
+  res.json(skillsWithViews);
+});
+
+// DELETE /api/skills/:id/video-access -> learner removes their video access (no refund)
+export const removeVideoAccess = asyncHandler(async (req, res) => {
+  const skill = await Skill.findById(req.params.id);
+  if (!skill) return res.status(404).json({ message: "Skill not found" });
+  
+  // Find and delete the video access for this learner
+  const videoAccess = await VideoAccess.findOne({ 
+    skill: skill._id, 
+    learner: req.user._id 
+  });
+  
+  if (!videoAccess) {
+    return res.status(404).json({ message: "Video access not found" });
+  }
+  
+  await VideoAccess.deleteOne({ _id: videoAccess._id });
+  
+  res.json({ message: "Video access removed successfully" });
+});

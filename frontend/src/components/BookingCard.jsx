@@ -48,7 +48,14 @@ export const BookingCard = ({ booking }) => (
           {booking.sessionDate && (
             <div className="flex items-center gap-1 text-sm text-slate-500">
               <span>📅</span>
-              <span>{new Date(booking.sessionDate).toLocaleString()}</span>
+              <span>{new Date(booking.sessionDate).toLocaleString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              })}</span>
             </div>
           )}
         </div>
