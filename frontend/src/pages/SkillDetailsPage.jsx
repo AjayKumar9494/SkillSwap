@@ -119,10 +119,22 @@ const SkillDetailsPage = () => {
     }
     
     try {
+      // Convert datetime-local string to ISO string with timezone
+      // datetime-local gives "YYYY-MM-DDTHH:mm" (no timezone)
+      // We need to convert it to ISO format preserving the user's local time
+      let sessionDateISO = sessionDate;
+      if (sessionDate) {
+        // Create a date object from the datetime-local string
+        // This interprets it as local time
+        const localDate = new Date(sessionDate);
+        // Convert to ISO string which includes timezone info
+        sessionDateISO = localDate.toISOString();
+      }
+      
       await api.post("/bookings", { 
         skillId: id, 
         message, 
-        sessionDate: sessionDate,
+        sessionDate: sessionDateISO,
         sessionDuration: sessionDuration
       });
       setMessage("");
@@ -276,6 +288,8 @@ const SkillDetailsPage = () => {
                         data-skill-id={id}
                         controls
                         preload="metadata"
+                        crossOrigin="anonymous"
+                        playsInline
                         className="w-full rounded-xl border border-slate-200 bg-black"
                         src={streamUrl}
                         poster={skill.thumbnailUrl ? `${apiBase.replace(/\/api\/?$/, "")}${skill.thumbnailUrl}` : undefined}
@@ -286,6 +300,10 @@ const SkillDetailsPage = () => {
                         }}
                         onCanPlay={() => {
                           setVideoLoading(false);
+                        }}
+                        onLoadedMetadata={() => {
+                          setVideoLoading(false);
+                          setVideoError("");
                         }}
                         onError={(e) => {
                           setVideoLoading(false);
@@ -300,13 +318,13 @@ const SkillDetailsPage = () => {
                                 errorMsg = "Network error. Please check your connection and try again.";
                                 break;
                               case videoEl.error.MEDIA_ERR_DECODE:
-                                errorMsg = "Video decoding error. The file may be corrupted.";
+                                errorMsg = "Video decoding error. The file may be corrupted or use an unsupported codec. Try converting to MP4 (H.264).";
                                 break;
                               case videoEl.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                                errorMsg = "Video format not supported by your browser.";
+                                errorMsg = "Video format not supported. Please ensure the video is in MP4 (H.264), WebM, or OGG format.";
                                 break;
                               default:
-                                errorMsg = `Video error (code: ${videoEl.error.code}). Please try again.`;
+                                errorMsg = `Video error (code: ${videoEl.error.code}). Please try again or contact support.`;
                             }
                           } else {
                             errorMsg = "Unable to load video. Please check if you have access and the file exists.";

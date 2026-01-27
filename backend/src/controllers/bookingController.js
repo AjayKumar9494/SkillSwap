@@ -39,35 +39,11 @@ export const createBooking = asyncHandler(async (req, res) => {
   }
 
   // Calculate session end time if session date is provided
-  // Preserve the exact time as provided (treat as local time, not UTC)
+  // sessionDate now comes as ISO string with timezone from frontend
   let sessionEndTime = null;
   if (sessionDate) {
-    const startTimeObj = new Date(sessionDate);
-    // Create a new date using local time components to avoid UTC conversion
-    const localStartTime = new Date(
-      startTimeObj.getFullYear(),
-      startTimeObj.getMonth(),
-      startTimeObj.getDate(),
-      startTimeObj.getHours(),
-      startTimeObj.getMinutes(),
-      startTimeObj.getSeconds()
-    );
-    sessionEndTime = new Date(localStartTime.getTime() + duration * 60 * 1000);
-  }
-
-  // Store sessionDate preserving local time
-  let storedSessionDate = null;
-  if (sessionDate) {
-    const dateObj = new Date(sessionDate);
-    // Create date using local time components to preserve the exact time
-    storedSessionDate = new Date(
-      dateObj.getFullYear(),
-      dateObj.getMonth(),
-      dateObj.getDate(),
-      dateObj.getHours(),
-      dateObj.getMinutes(),
-      dateObj.getSeconds()
-    );
+    const startTime = new Date(sessionDate);
+    sessionEndTime = new Date(startTime.getTime() + duration * 60 * 1000);
   }
 
   const booking = await Booking.create({
@@ -76,7 +52,7 @@ export const createBooking = asyncHandler(async (req, res) => {
     teacher: skill.owner,
     creditCost: skill.creditCost,
     message,
-    sessionDate: storedSessionDate || sessionDate,
+    sessionDate,
     sessionDuration: duration,
     sessionEndTime,
   });
@@ -144,22 +120,12 @@ export const approveBooking = asyncHandler(async (req, res) => {
   booking.approvedAt = new Date();
   
   // Set session start and end times if sessionDate is set
-  // Preserve the exact time as provided (treat as local time, not UTC)
+  // The sessionDate is stored in UTC but represents the user's local time
+  // We use it directly since it already has the correct time values
   if (booking.sessionDate) {
-    const sessionDateObj = new Date(booking.sessionDate);
-    // If the date string doesn't have timezone info, treat it as local time
-    // Create a new date using local time components to avoid UTC conversion
-    const localDate = new Date(
-      sessionDateObj.getFullYear(),
-      sessionDateObj.getMonth(),
-      sessionDateObj.getDate(),
-      sessionDateObj.getHours(),
-      sessionDateObj.getMinutes(),
-      sessionDateObj.getSeconds()
-    );
-    booking.sessionStartTime = localDate;
+    booking.sessionStartTime = new Date(booking.sessionDate);
     if (booking.sessionDuration) {
-      booking.sessionEndTime = new Date(localDate.getTime() + booking.sessionDuration * 60 * 1000);
+      booking.sessionEndTime = new Date(booking.sessionStartTime.getTime() + booking.sessionDuration * 60 * 1000);
     }
   }
   

@@ -631,15 +631,17 @@ const BookingsPage = () => {
                           </div>
                         );
                       } else if (sessionStart && !hasSessionStarted) {
-                        // Format date in local timezone consistently
+                        // Format date in local timezone - the date is stored in UTC but represents local time
                         const startDate = new Date(sessionStart);
+                        // Use toLocaleString which automatically converts to user's local timezone
                         const formattedDate = startDate.toLocaleString('en-US', {
                           year: 'numeric',
                           month: '2-digit',
                           day: '2-digit',
                           hour: '2-digit',
                           minute: '2-digit',
-                          hour12: true
+                          hour12: true,
+                          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
                         });
                         return (
                           <span className="text-xs text-amber-600 font-semibold">

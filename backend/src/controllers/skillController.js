@@ -22,11 +22,15 @@ const videoAbsolutePathFromSkill = (skill) => {
 
 const getMimeFromFilename = (filename) => {
   const ext = (path.extname(filename || "") || "").toLowerCase();
+  // Return proper MIME types for video formats
   if (ext === ".mp4") return "video/mp4";
   if (ext === ".webm") return "video/webm";
   if (ext === ".ogg" || ext === ".ogv") return "video/ogg";
   if (ext === ".mov") return "video/quicktime";
-  return "application/octet-stream";
+  if (ext === ".avi") return "video/x-msvideo";
+  if (ext === ".mkv") return "video/x-matroska";
+  // Default to mp4 if extension is missing or unknown (most common format)
+  return "video/mp4";
 };
 
 const authFromHeaderCookieOrQuery = async (req) => {
@@ -245,11 +249,21 @@ export const streamSkillVideo = asyncHandler(async (req, res) => {
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type, Authorization");
+  } else {
+    // Allow all origins if no origin header (for direct access)
+    res.setHeader("Access-Control-Allow-Origin", "*");
   }
   res.setHeader("Accept-Ranges", "bytes");
   res.setHeader("Content-Type", contentType);
   res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
   res.setHeader("X-Content-Type-Options", "nosniff");
+  
+  // Handle OPTIONS request for CORS preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
   if (range) {
     const parts = String(range).replace(/bytes=/, "").split("-");
