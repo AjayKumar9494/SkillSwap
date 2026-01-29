@@ -37,12 +37,19 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
-      // If explicitly allowed, permit
+      // Explicit allow-list
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      // Fallback: temporarily allow any origin in non-production
-      if (process.env.NODE_ENV !== "production") {
-        return callback(null, true);
-      }
+
+      // Capacitor / local-webview origins (Android often uses http(s)://localhost)
+      if (origin === "http://localhost" || origin === "https://localhost") return callback(null, true);
+      if (origin.startsWith("capacitor://")) return callback(null, true);
+
+      // Convenience: allow any Vercel preview/prod domain
+      if (origin.endsWith(".vercel.app")) return callback(null, true);
+
+      // Convenience: allow localhost dev origins
+      if (origin.startsWith("http://localhost:") || origin.startsWith("https://localhost:")) return callback(null, true);
+
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
