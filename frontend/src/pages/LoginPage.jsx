@@ -38,8 +38,8 @@ const LoginPage = () => {
         const errorMessage = err.response.data?.message || "Login failed. Please check your credentials.";
         setError(errorMessage);
       } else if (err.request) {
-        // Request was made but no response received
-        setError("Unable to connect to server. Please make sure the backend is running on http://localhost:5000");
+        // Request was made but no response received (network / CORS / server down)
+        setError("Unable to connect to server. Please check your internet connection or try again in a moment.");
       } else {
         // Something else happened
         setError(err.message || "Login failed. Please try again.");
