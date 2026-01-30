@@ -257,7 +257,7 @@ const SkillFormPage = ({ editMode = false }) => {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">Upload offline video</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                        <p className="text-sm text-slate-500">
                           Upload a short lesson/preview video (any format). MP4 (H.264) is recommended for best playback everywhere.
                         </p>
                       </div>

@@ -254,7 +254,7 @@ const LandingPage = () => {
                     <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                       {stat.value}
                     </p>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">{stat.label}</p>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1">{stat.label}</p>
                   </motion.div>
                 ))}
               </motion.div>

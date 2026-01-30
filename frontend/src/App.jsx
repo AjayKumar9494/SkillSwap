@@ -1,6 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
 import { SocketProvider } from "./context/SocketContext";
 import { PrivateRoute } from "./components/PrivateRoute";
 import LandingPage from "./pages/LandingPage";
@@ -23,10 +22,9 @@ import "./App.css";
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SocketProvider>
-          <BrowserRouter>
+    <AuthProvider>
+      <SocketProvider>
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
@@ -116,10 +114,9 @@ function App() {
               }
             />
           </Routes>
-          </BrowserRouter>
-        </SocketProvider>
-      </AuthProvider>
-    </ThemeProvider>
+        </BrowserRouter>
+      </SocketProvider>
+    </AuthProvider>
   );
 }
 

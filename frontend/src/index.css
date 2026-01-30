@@ -31,10 +31,6 @@ body {
   background-attachment: fixed;
 }
 
-.dark body {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #1e1b4b 50%, #312e81 75%, #0f172a 100%);
-  color: #e2e8f0;
-}
 
 ::selection {
   background: #2563eb;
@@ -65,17 +61,6 @@ html {
   background: #94a3b8;
 }
 
-.dark ::-webkit-scrollbar-track {
-  background: #1e293b;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #475569;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
-}
 
 /* Enhanced focus styles */
 *:focus-visible {

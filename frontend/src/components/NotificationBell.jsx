@@ -123,7 +123,7 @@ export const NotificationBell = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors"
       >
         <span className="text-2xl">🔔</span>
         {unreadCount > 0 && (
@@ -140,14 +140,14 @@ export const NotificationBell = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute right-0 mt-2 w-[min(95vw,22rem)] sm:w-80 md:w-96 bg-white dark:bg-slate-800 rounded-xl shadow-xl border-2 border-slate-200 dark:border-slate-600 z-50 max-h-[70vh] overflow-hidden flex flex-col"
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            className="fixed left-0 right-0 top-16 z-[100] mx-auto flex max-h-[75vh] w-full max-w-md flex-col overflow-hidden rounded-b-xl border-2 border-t-0 border-slate-200 bg-white shadow-xl md:absolute md:right-0 md:left-auto md:top-full md:mt-2 md:max-h-[70vh] md:w-96 md:rounded-xl md:border-t-2"
           >
-            <div className="p-4 border-b border-slate-200 dark:border-slate-600 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800">
+            <div className="flex-shrink-0 p-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-purple-50">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-900 dark:text-slate-100">Notifications</h3>
+                <h3 className="font-bold text-slate-900">Notifications</h3>
                 {unreadCount > 0 && (
                   <Button
                     variant="ghost"
@@ -167,14 +167,14 @@ export const NotificationBell = () => {
                   <p className="text-slate-600 text-sm">No notifications</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                <div className="divide-y divide-slate-100">
                   {notifications.map((notification) => (
                     <motion.div
                       key={notification._id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer border-l-4 ${
-                        !notification.read ? "border-blue-500 bg-blue-50/30 dark:bg-blue-900/20" : "border-transparent"
+                      className={`p-4 hover:bg-slate-50 transition-colors cursor-pointer border-l-4 ${
+                        !notification.read ? "border-blue-500 bg-blue-50/30" : "border-transparent"
                       } ${getNotificationColor(notification.type)}`}
                       onClick={() => {
                         if (!notification.read) {
@@ -186,11 +186,11 @@ export const NotificationBell = () => {
                         <div className="text-2xl flex-shrink-0">
                           {getNotificationIcon(notification.type)}
                         </div>
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <p className="font-semibold text-sm text-slate-900 dark:text-slate-100 mb-1 break-words">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-slate-900 mb-1 break-words">
                             {notification.title}
                           </p>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 break-words whitespace-pre-wrap">
+                          <p className="text-sm text-slate-600 break-words whitespace-pre-wrap">
                             {notification.message}
                           </p>
                           {notification.type === "booking_approved" && (
@@ -219,7 +219,7 @@ export const NotificationBell = () => {
                               View Pending Sessions →
                             </Button>
                           )}
-                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                          <p className="text-xs text-slate-400 mt-1">
                             {new Date(notification.createdAt).toLocaleString()}
                           </p>
                         </div>
