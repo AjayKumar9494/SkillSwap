@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Video, VideoOff, Mic, MicOff, Volume2, VolumeX, Maximize2, Minimize2, Monitor, MessageCircle, PhoneOff } from "lucide-react";
 import { PageLayout } from "../components/PageLayout";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -28,6 +29,7 @@ const VideoCallPage = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isSwapped, setIsSwapped] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [localOutputEnabled, setLocalOutputEnabled] = useState(true); // speaker: hear remote audio
   const [otherUserPresence, setOtherUserPresence] = useState({ isOnline: false, lastSeen: null });
   const [unreadChatCount, setUnreadChatCount] = useState(0);
 
@@ -284,6 +286,12 @@ const VideoCallPage = () => {
     }
   }, [isSwapped, isCallActive]);
 
+  // Sync remote video volume (speaker on/off)
+  useEffect(() => {
+    const el = remoteVideoRef.current;
+    if (el) el.volume = localOutputEnabled ? 1 : 0;
+  }, [localOutputEnabled, isCallActive]);
+
   const toggleVideo = () => {
     if (localStreamRef.current) {
       const track = localStreamRef.current.getVideoTracks()[0];
@@ -299,6 +307,8 @@ const VideoCallPage = () => {
       setLocalAudioEnabled(track.enabled);
     }
   };
+
+  const toggleSpeaker = () => setLocalOutputEnabled((v) => !v);
 
   const stopScreenShareSilently = async () => {
     if (screenStreamRef.current) {
@@ -495,15 +505,42 @@ const VideoCallPage = () => {
                 </div>
 
                 {/* In-stage control bar (Zoom-style); visible in normal and fullscreen */}
-                <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 sm:py-3 bg-gradient-to-t from-black/90 to-transparent">
-                  <Button variant={localVideoEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleVideo} className="rounded-full h-9 w-9 sm:h-10 sm:w-10 p-0 shrink-0" title={localVideoEnabled ? "Stop video" : "Start video"}>{localVideoEnabled ? "📹" : "📵"}</Button>
-                  <Button variant={localAudioEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleAudio} className="rounded-full h-9 w-9 sm:h-10 sm:w-10 p-0 shrink-0" title={localAudioEnabled ? "Mute" : "Unmute"}>{localAudioEnabled ? "🎤" : "🔇"}</Button>
-                  <Button variant="secondary" size="sm" onClick={toggleFullscreen} className="rounded-full h-9 px-3 sm:h-10 sm:px-4 shrink-0 text-xs" title={isFullscreen ? "Exit full screen" : "Full screen (zoom)"}>{isFullscreen ? "⤢ Exit" : "⛶ Full screen"}</Button>
-                  {canScreenShare && (
-                    <Button variant={isScreenSharing ? "default" : "secondary"} size="sm" onClick={toggleScreenShare} className={`rounded-full h-9 px-2 sm:h-10 sm:px-3 shrink-0 text-xs ${isScreenSharing ? "bg-green-600 hover:bg-green-700" : ""}`} title={isScreenSharing ? "Stop sharing" : "Share screen"}>{isScreenSharing ? "Stop" : "Share"}</Button>
-                  )}
-                  <Button variant="secondary" size="sm" onClick={() => setIsChatOpen(!isChatOpen)} className="rounded-full h-9 px-2 sm:h-10 sm:px-3 shrink-0 text-xs">Chat{unreadChatCount > 0 ? ` (${unreadChatCount})` : ""}</Button>
-                  <Button variant="destructive" size="sm" onClick={endCall} className="rounded-full h-9 px-3 sm:h-10 sm:px-4 shrink-0 text-xs" title="End call">End</Button>
+                <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-2 py-3 sm:px-3 sm:py-3 bg-gradient-to-t from-black/90 to-transparent">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Button variant={localVideoEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleVideo} className="rounded-full h-10 w-10 p-0 shrink-0" title={localVideoEnabled ? "Stop video" : "Start video"}>{localVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}</Button>
+                    <span className="text-[10px] text-white/80">Camera</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Button variant={localAudioEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleAudio} className="rounded-full h-10 w-10 p-0 shrink-0" title={localAudioEnabled ? "Mute microphone" : "Unmute microphone"}>{localAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}</Button>
+                    <span className="text-[10px] text-white/80">Mic</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Button variant={localOutputEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleSpeaker} className="rounded-full h-10 w-10 p-0 shrink-0" title={localOutputEnabled ? "Mute speaker" : "Unmute speaker"}>{localOutputEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}</Button>
+                    <span className="text-[10px] text-white/80">Speaker</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Button variant="secondary" size="sm" onClick={toggleFullscreen} className="rounded-full h-10 w-10 p-0 shrink-0" title={isFullscreen ? "Exit full screen" : "Full screen"}>{isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}</Button>
+                    <span className="text-[10px] text-white/80">Full screen</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5">
+                    {canScreenShare ? (
+                      <Button variant={isScreenSharing ? "default" : "secondary"} size="sm" onClick={toggleScreenShare} className={`rounded-full h-10 w-10 p-0 shrink-0 ${isScreenSharing ? "bg-green-600 hover:bg-green-700" : ""}`} title={isScreenSharing ? "Stop sharing screen" : "Share screen"}><Monitor className="h-5 w-5" /></Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" disabled className="rounded-full h-10 w-10 p-0 shrink-0 opacity-60" title="Share screen (desktop only)"><Monitor className="h-5 w-5" /></Button>
+                    )}
+                    <span className="text-[10px] text-white/80">Share</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Button variant="secondary" size="sm" onClick={() => setIsChatOpen(!isChatOpen)} className="rounded-full h-10 w-10 p-0 shrink-0 relative" title="Chat">
+                      <MessageCircle className="h-5 w-5" />
+                      {unreadChatCount > 0 && <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{unreadChatCount > 9 ? "9+" : unreadChatCount}</span>}
+                    </Button>
+                    <span className="text-[10px] text-white/80">Chat</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Button variant="destructive" size="sm" onClick={endCall} className="rounded-full h-10 w-10 p-0 shrink-0" title="End call"><PhoneOff className="h-5 w-5" /></Button>
+                    <span className="text-[10px] text-white/80">End</span>
+                  </div>
                 </div>
               </div>
 
