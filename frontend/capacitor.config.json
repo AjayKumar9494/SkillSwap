@@ -2,6 +2,10 @@
   "appId": "com.skillswap.app",
   "appName": "SkillSwap",
   "webDir": "dist",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://skill-swap-7.vercel.app",
+    "cleartext": false
+  }
 }
 

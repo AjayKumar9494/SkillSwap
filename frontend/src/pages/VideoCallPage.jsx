@@ -504,41 +504,41 @@ const VideoCallPage = () => {
                   </div>
                 </div>
 
-                {/* In-stage control bar (Zoom-style); visible in normal and fullscreen */}
-                <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-2 py-3 sm:px-3 sm:py-3 bg-gradient-to-t from-black/90 to-transparent">
+                {/* In-stage control bar (Zoom-style); visible in normal and fullscreen; icons white for visibility on dark bar (desktop + mobile) */}
+                <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-2 py-3 sm:px-3 sm:py-3 bg-gradient-to-t from-black/90 to-transparent [&_button]:text-white [&_button_svg]:text-white">
                   <div className="flex flex-col items-center gap-0.5">
-                    <Button variant={localVideoEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleVideo} className="rounded-full h-10 w-10 p-0 shrink-0" title={localVideoEnabled ? "Stop video" : "Start video"}>{localVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}</Button>
+                    <Button variant={localVideoEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleVideo} className="rounded-full h-10 w-10 p-0 shrink-0 text-white" title={localVideoEnabled ? "Stop video" : "Start video"}>{localVideoEnabled ? <Video className="h-5 w-5 text-white" /> : <VideoOff className="h-5 w-5 text-white" />}</Button>
                     <span className="text-[10px] text-white/80">Camera</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
-                    <Button variant={localAudioEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleAudio} className="rounded-full h-10 w-10 p-0 shrink-0" title={localAudioEnabled ? "Mute microphone" : "Unmute microphone"}>{localAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}</Button>
+                    <Button variant={localAudioEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleAudio} className="rounded-full h-10 w-10 p-0 shrink-0 text-white" title={localAudioEnabled ? "Mute microphone" : "Unmute microphone"}>{localAudioEnabled ? <Mic className="h-5 w-5 text-white" /> : <MicOff className="h-5 w-5 text-white" />}</Button>
                     <span className="text-[10px] text-white/80">Mic</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
-                    <Button variant={localOutputEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleSpeaker} className="rounded-full h-10 w-10 p-0 shrink-0" title={localOutputEnabled ? "Mute speaker" : "Unmute speaker"}>{localOutputEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}</Button>
+                    <Button variant={localOutputEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleSpeaker} className="rounded-full h-10 w-10 p-0 shrink-0 text-white" title={localOutputEnabled ? "Mute speaker" : "Unmute speaker"}>{localOutputEnabled ? <Volume2 className="h-5 w-5 text-white" /> : <VolumeX className="h-5 w-5 text-white" />}</Button>
                     <span className="text-[10px] text-white/80">Speaker</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
-                    <Button variant="secondary" size="sm" onClick={toggleFullscreen} className="rounded-full h-10 w-10 p-0 shrink-0" title={isFullscreen ? "Exit full screen" : "Full screen"}>{isFullscreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}</Button>
+                    <Button variant="secondary" size="sm" onClick={toggleFullscreen} className="rounded-full h-10 w-10 p-0 shrink-0 text-white" title={isFullscreen ? "Exit full screen" : "Full screen"}>{isFullscreen ? <Minimize2 className="h-5 w-5 text-white" /> : <Maximize2 className="h-5 w-5 text-white" />}</Button>
                     <span className="text-[10px] text-white/80">Full screen</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
                     {canScreenShare ? (
-                      <Button variant={isScreenSharing ? "default" : "secondary"} size="sm" onClick={toggleScreenShare} className={`rounded-full h-10 w-10 p-0 shrink-0 ${isScreenSharing ? "bg-green-600 hover:bg-green-700" : ""}`} title={isScreenSharing ? "Stop sharing screen" : "Share screen"}><Monitor className="h-5 w-5" /></Button>
+                      <Button variant={isScreenSharing ? "default" : "secondary"} size="sm" onClick={toggleScreenShare} className={`rounded-full h-10 w-10 p-0 shrink-0 text-white ${isScreenSharing ? "bg-green-600 hover:bg-green-700" : ""}`} title={isScreenSharing ? "Stop sharing screen" : "Share screen"}><Monitor className="h-5 w-5 text-white" /></Button>
                     ) : (
-                      <Button variant="secondary" size="sm" disabled className="rounded-full h-10 w-10 p-0 shrink-0 opacity-60" title="Share screen (desktop only)"><Monitor className="h-5 w-5" /></Button>
+                      <Button variant="secondary" size="sm" disabled className="rounded-full h-10 w-10 p-0 shrink-0 opacity-60 text-white" title="Share screen (desktop only)"><Monitor className="h-5 w-5 text-white" /></Button>
                     )}
                     <span className="text-[10px] text-white/80">Share</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
-                    <Button variant="secondary" size="sm" onClick={() => setIsChatOpen(!isChatOpen)} className="rounded-full h-10 w-10 p-0 shrink-0 relative" title="Chat">
-                      <MessageCircle className="h-5 w-5" />
+                    <Button variant="secondary" size="sm" onClick={() => setIsChatOpen(!isChatOpen)} className="rounded-full h-10 w-10 p-0 shrink-0 relative text-white" title="Chat">
+                      <MessageCircle className="h-5 w-5 text-white" />
                       {unreadChatCount > 0 && <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{unreadChatCount > 9 ? "9+" : unreadChatCount}</span>}
                     </Button>
                     <span className="text-[10px] text-white/80">Chat</span>
                   </div>
                   <div className="flex flex-col items-center gap-0.5">
-                    <Button variant="destructive" size="sm" onClick={endCall} className="rounded-full h-10 w-10 p-0 shrink-0" title="End call"><PhoneOff className="h-5 w-5" /></Button>
+                    <Button variant="destructive" size="sm" onClick={endCall} className="rounded-full h-10 w-10 p-0 shrink-0 text-white" title="End call"><PhoneOff className="h-5 w-5 text-white" /></Button>
                     <span className="text-[10px] text-white/80">End</span>
                   </div>
                 </div>
