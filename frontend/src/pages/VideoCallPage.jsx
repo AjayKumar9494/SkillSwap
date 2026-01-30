@@ -27,11 +27,13 @@ const VideoCallPage = () => {
   const [chatInput, setChatInput] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isSwapped, setIsSwapped] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [otherUserPresence, setOtherUserPresence] = useState({ isOnline: false, lastSeen: null });
   const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const videoStageRef = useRef(null);
   const socketRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
@@ -140,11 +142,36 @@ const VideoCallPage = () => {
   };
 
   const endCall = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     cleanup();
     setIsCallActive(false);
     setIsConnected(false);
     setIsScreenSharing(false);
+    setIsFullscreen(false);
   };
+
+  const toggleFullscreen = async () => {
+    if (!videoStageRef.current) return;
+    try {
+      if (!document.fullscreenElement) {
+        await videoStageRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn("Fullscreen error:", err);
+    }
+  };
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
 
   const isMobileOrCapacitor = () => {
     if (typeof window === "undefined") return false;
@@ -414,39 +441,39 @@ const VideoCallPage = () => {
               </div>
             </div>
           ) : (
-            <div className="flex gap-4 h-[70vh]">
-              {/* Main Video Area */}
-              <div className="relative flex-1 rounded-3xl overflow-hidden bg-slate-900 shadow-2xl group border-4 border-white/10">
-                <video
-                  key={`main-${isSwapped}`}
-                  ref={isSwapped ? localVideoRef : remoteVideoRef}
-                  autoPlay
-                  playsInline
-                  muted={isSwapped}
-                  className="h-full w-full object-cover transition-all duration-700"
-                  style={!isSwapped ? {} : { transform: isScreenSharing ? "none" : "scaleX(-1)" }}
-                />
-
-                {/* Status Overlay */}
-                <div className="absolute top-6 left-6 flex items-center gap-3 px-4 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/10 text-white z-10">
-                  <div className={`w-3 h-3 rounded-full ${otherUserPresence.isOnline ? "bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" : "bg-slate-400"}`}></div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black tracking-tight">{!isSwapped ? otherUser?.name : "You (Preview)"}</span>
-                    {!otherUserPresence.isOnline && !isSwapped && (
-                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                        Last seen: {otherUserPresence.lastSeen ? new Date(otherUserPresence.lastSeen).toLocaleTimeString() : "Offline"}
-                      </span>
-                    )}
-                    {otherUserPresence.isOnline && !isSwapped && (
-                      <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Online</span>
+            <div className="flex gap-4 h-[70vh] min-h-[400px]">
+              {/* Zoom-style: main stage (teacher full) + small PiP (you) */}
+              <div
+                ref={videoStageRef}
+                className="relative flex-1 rounded-2xl overflow-hidden bg-black shadow-2xl flex flex-col"
+              >
+                {/* Main speaker view — fills stage; default = remote (teacher) */}
+                <div className="relative flex-1 min-h-0 w-full">
+                  <video
+                    key={`main-${isSwapped}`}
+                    ref={isSwapped ? localVideoRef : remoteVideoRef}
+                    autoPlay
+                    playsInline
+                    muted={isSwapped}
+                    className="absolute inset-0 h-full w-full object-contain"
+                    style={!isSwapped ? {} : { transform: isScreenSharing ? "none" : "scaleX(-1)" }}
+                  />
+                  {/* Name badge on main view */}
+                  <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/50 backdrop-blur-sm text-white z-10">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${otherUserPresence.isOnline ? "bg-green-400 animate-pulse" : "bg-slate-400"}`} />
+                    <span className="text-sm font-semibold truncate max-w-[180px]">
+                      {!isSwapped ? (otherUser?.name || "Teacher") : "You"}
+                    </span>
+                    {!isSwapped && otherUserPresence.isOnline && (
+                      <span className="text-[10px] text-green-300 font-medium">LIVE</span>
                     )}
                   </div>
                 </div>
 
-                {/* Swappable Small Screen (PiP) */}
+                {/* PiP — small corner tile (like Zoom); click to swap who is main */}
                 <div
                   onClick={() => setIsSwapped(!isSwapped)}
-                  className="absolute bottom-6 right-6 w-48 h-64 md:w-64 md:h-48 rounded-2xl overflow-hidden border-4 border-white/20 shadow-2xl cursor-pointer hover:scale-105 hover:border-indigo-400 transition-all duration-300 z-20 group"
+                  className="absolute bottom-20 right-4 w-[120px] h-[90px] sm:w-[160px] sm:h-[100px] md:w-[180px] md:h-[120px] rounded-lg overflow-hidden border-2 border-white/40 shadow-xl cursor-pointer hover:border-blue-400 hover:shadow-2xl transition-all z-20 bg-slate-800"
                 >
                   <video
                     key={`pip-${isSwapped}`}
@@ -457,19 +484,26 @@ const VideoCallPage = () => {
                     className="h-full w-full object-cover"
                     style={isSwapped ? {} : { transform: isScreenSharing ? "none" : "scaleX(-1)" }}
                   />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <span className="bg-white/90 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-lg">Swap View</span>
+                  <div className="absolute bottom-0 left-0 right-0 py-1 px-2 bg-black/60 text-center">
+                    <span className="text-[10px] font-semibold text-white">
+                      {isSwapped ? otherUser?.name || "Teacher" : "You"}
+                    </span>
                   </div>
-                  <div className="absolute bottom-3 left-3 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-sm text-[10px] text-white font-bold tracking-widest uppercase">
-                    {isSwapped ? otherUser?.name : "You"}
+                  <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/50 text-[10px] text-white">
+                    Tap to swap
                   </div>
                 </div>
 
-                {/* Switcher Tooltip */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="bg-indigo-600 text-white px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl">
-                    Click small screen to swap
-                  </div>
+                {/* In-stage control bar (Zoom-style); visible in normal and fullscreen */}
+                <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-3 sm:py-3 bg-gradient-to-t from-black/90 to-transparent">
+                  <Button variant={localVideoEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleVideo} className="rounded-full h-9 w-9 sm:h-10 sm:w-10 p-0 shrink-0" title={localVideoEnabled ? "Stop video" : "Start video"}>{localVideoEnabled ? "📹" : "📵"}</Button>
+                  <Button variant={localAudioEnabled ? "secondary" : "destructive"} size="sm" onClick={toggleAudio} className="rounded-full h-9 w-9 sm:h-10 sm:w-10 p-0 shrink-0" title={localAudioEnabled ? "Mute" : "Unmute"}>{localAudioEnabled ? "🎤" : "🔇"}</Button>
+                  <Button variant="secondary" size="sm" onClick={toggleFullscreen} className="rounded-full h-9 px-3 sm:h-10 sm:px-4 shrink-0 text-xs" title={isFullscreen ? "Exit full screen" : "Full screen (zoom)"}>{isFullscreen ? "⤢ Exit" : "⛶ Full screen"}</Button>
+                  {canScreenShare && (
+                    <Button variant={isScreenSharing ? "default" : "secondary"} size="sm" onClick={toggleScreenShare} className={`rounded-full h-9 px-2 sm:h-10 sm:px-3 shrink-0 text-xs ${isScreenSharing ? "bg-green-600 hover:bg-green-700" : ""}`} title={isScreenSharing ? "Stop sharing" : "Share screen"}>{isScreenSharing ? "Stop" : "Share"}</Button>
+                  )}
+                  <Button variant="secondary" size="sm" onClick={() => setIsChatOpen(!isChatOpen)} className="rounded-full h-9 px-2 sm:h-10 sm:px-3 shrink-0 text-xs">Chat{unreadChatCount > 0 ? ` (${unreadChatCount})` : ""}</Button>
+                  <Button variant="destructive" size="sm" onClick={endCall} className="rounded-full h-9 px-3 sm:h-10 sm:px-4 shrink-0 text-xs" title="End call">End</Button>
                 </div>
               </div>
 
@@ -520,25 +554,6 @@ const VideoCallPage = () => {
             </div>
           )}
 
-          {isCallActive && (
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Button variant={localVideoEnabled ? "default" : "destructive"} onClick={toggleVideo}>{localVideoEnabled ? "Stop Video" : "Start Video"}</Button>
-              <Button variant={localAudioEnabled ? "default" : "destructive"} onClick={toggleAudio}>{localAudioEnabled ? "Mute" : "Unmute"}</Button>
-              {canScreenShare ? (
-                <Button variant={isScreenSharing ? "default" : "outline"} onClick={toggleScreenShare} className={isScreenSharing ? "bg-green-600 hover:bg-green-700 text-white" : ""}>
-                  {isScreenSharing ? "Stop Sharing" : "Share Screen"}
-                </Button>
-              ) : (
-                <Button variant="outline" disabled title="Screen share is not supported on mobile">
-                  Share Screen (desktop only)
-                </Button>
-              )}
-              <Button variant="outline" onClick={() => setIsChatOpen(!isChatOpen)}>
-                Chat{unreadChatCount > 0 ? ` (${unreadChatCount})` : ""}
-              </Button>
-              <Button variant="destructive" onClick={endCall}>End Call</Button>
-            </div>
-          )}
         </div>
       </div>
     </PageLayout>
