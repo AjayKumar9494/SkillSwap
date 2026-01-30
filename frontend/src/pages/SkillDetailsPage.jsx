@@ -270,6 +270,12 @@ const SkillDetailsPage = () => {
                               setVideoLoading(true);
                               const videoEl = document.querySelector(`video[data-skill-id="${id}"]`);
                               if (videoEl) {
+                                const freshToken = localStorage.getItem("token") || "";
+                                const base = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").trim().replace(/\/$/, "");
+                                const newSrc = freshToken
+                                  ? `${base}/skills/${id}/video-stream?token=${encodeURIComponent(freshToken)}`
+                                  : `${base}/skills/${id}/video-stream`;
+                                videoEl.src = newSrc;
                                 videoEl.load();
                               }
                             }}
@@ -321,7 +327,7 @@ const SkillDetailsPage = () => {
                                 errorMsg = "Video decoding error. The file may be corrupted or use an unsupported codec. Try converting to MP4 (H.264).";
                                 break;
                               case videoEl.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                                errorMsg = "Video format not supported. Please ensure the video is in MP4 (H.264), WebM, or OGG format.";
+                                errorMsg = "Video format not supported. Use MP4 (H.264) for best compatibility. Try Retry or re-upload as MP4.";
                                 break;
                               default:
                                 errorMsg = `Video error (code: ${videoEl.error.code}). Please try again or contact support.`;

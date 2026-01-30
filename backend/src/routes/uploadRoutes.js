@@ -29,9 +29,9 @@ const upload = multer({
   storage,
   limits: { fileSize: 250 * 1024 * 1024 }, // 250MB
   fileFilter: (req, file, cb) => {
-    const allowed = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
-    if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Only mp4, webm, ogg, mov videos are allowed"));
+    const mimetype = (file.mimetype || "").toLowerCase();
+    if (!mimetype.startsWith("video/")) {
+      return cb(new Error("File must be a video (any video format is allowed)"));
     }
     cb(null, true);
   },

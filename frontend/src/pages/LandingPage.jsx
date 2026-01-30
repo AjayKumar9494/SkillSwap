@@ -61,7 +61,7 @@ const formatCompact = (n) => {
 
 const LandingPage = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [liveStats, setLiveStats] = useState({ skillsListed: null, bookingsCompleted: null });
+  const [liveStats, setLiveStats] = useState({ skillsListed: null, bookingsCompleted: null, activeUsers: null });
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 300], [0, 100]);
   const y2 = useTransform(scrollY, [0, 300], [0, -100]);
@@ -87,6 +87,7 @@ const LandingPage = () => {
           setLiveStats({
             skillsListed: typeof data?.skillsListed === "number" ? data.skillsListed : null,
             bookingsCompleted: typeof data?.bookingsCompleted === "number" ? data.bookingsCompleted : null,
+            activeUsers: typeof data?.activeUsers === "number" ? data.activeUsers : null,
           });
         }
       } catch {
@@ -103,7 +104,8 @@ const LandingPage = () => {
   }, []);
 
   const stats = [
-    { value: formatCompact(liveStats.skillsListed), label: "Skills listed", delay: 0 },
+    { value: formatCompact(liveStats.activeUsers), label: "Active users", delay: 0 },
+    { value: formatCompact(liveStats.skillsListed), label: "Skills listed", delay: 0.05 },
     { value: formatCompact(liveStats.bookingsCompleted), label: "Bookings completed", delay: 0.1 },
   ];
 
@@ -238,7 +240,7 @@ const LandingPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="grid grid-cols-2 gap-6 pt-8 max-w-md"
+                className="grid grid-cols-3 gap-4 sm:gap-6 pt-8 max-w-lg"
               >
                 {stats.map((stat, idx) => (
                   <motion.div
@@ -252,7 +254,7 @@ const LandingPage = () => {
                     <p className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                       {stat.value}
                     </p>
-                    <p className="text-sm text-slate-600 mt-1">{stat.label}</p>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">{stat.label}</p>
                   </motion.div>
                 ))}
               </motion.div>

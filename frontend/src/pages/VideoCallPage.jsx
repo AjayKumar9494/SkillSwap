@@ -146,13 +146,21 @@ const VideoCallPage = () => {
     setIsScreenSharing(false);
   };
 
+  const isMobileOrCapacitor = () => {
+    if (typeof window === "undefined") return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      window.Capacitor?.isNativePlatform?.() === true;
+  };
+
   const startCall = async () => {
     try {
       setError("");
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: true,
-      });
+      const isMobile = isMobileOrCapacitor();
+      const stream = await navigator.mediaDevices.getUserMedia(
+        isMobile
+          ? { video: true, audio: true }
+          : { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true }
+      );
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
@@ -221,7 +229,10 @@ const VideoCallPage = () => {
       setIsCallActive(true);
     } catch (err) {
       console.error(err);
-      setError("Failed to access media devices.");
+      const msg = err?.name === "NotAllowedError" || err?.message?.toLowerCase?.().includes("permission")
+        ? "Camera or microphone access was denied. Please allow permissions in your device settings and try again."
+        : "Failed to access camera or microphone. Check app permissions in Settings and try again.";
+      setError(msg);
     }
   };
 
@@ -280,7 +291,15 @@ const VideoCallPage = () => {
     setIsScreenSharing(false);
   };
 
+  const canScreenShare = typeof navigator !== "undefined" &&
+    navigator.mediaDevices?.getDisplayMedia &&
+    !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   const toggleScreenShare = async () => {
+    if (!canScreenShare) {
+      setError("Screen share is not supported on this device. Use a laptop or desktop.");
+      return;
+    }
     try {
       if (isScreenSharing) {
         await stopScreenShareSilently();
@@ -502,12 +521,18 @@ const VideoCallPage = () => {
           )}
 
           {isCallActive && (
-            <div className="mt-6 flex justify-center gap-3">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button variant={localVideoEnabled ? "default" : "destructive"} onClick={toggleVideo}>{localVideoEnabled ? "Stop Video" : "Start Video"}</Button>
               <Button variant={localAudioEnabled ? "default" : "destructive"} onClick={toggleAudio}>{localAudioEnabled ? "Mute" : "Unmute"}</Button>
-              <Button variant={isScreenSharing ? "default" : "outline"} onClick={toggleScreenShare} className={isScreenSharing ? "bg-green-600 hover:bg-green-700 text-white" : ""}>
-                {isScreenSharing ? "Stop Sharing" : "Share Screen"}
-              </Button>
+              {canScreenShare ? (
+                <Button variant={isScreenSharing ? "default" : "outline"} onClick={toggleScreenShare} className={isScreenSharing ? "bg-green-600 hover:bg-green-700 text-white" : ""}>
+                  {isScreenSharing ? "Stop Sharing" : "Share Screen"}
+                </Button>
+              ) : (
+                <Button variant="outline" disabled title="Screen share is not supported on mobile">
+                  Share Screen (desktop only)
+                </Button>
+              )}
               <Button variant="outline" onClick={() => setIsChatOpen(!isChatOpen)}>
                 Chat{unreadChatCount > 0 ? ` (${unreadChatCount})` : ""}
               </Button>

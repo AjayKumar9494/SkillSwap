@@ -23,7 +23,7 @@ export function MobileBottomNav() {
   if (!user) return null;
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-md">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95">
       <div className="mx-auto grid max-w-screen-sm grid-cols-4 px-2 pb-[env(safe-area-inset-bottom)]">
         {items.map(({ label, to, Icon }) => {
           const active = isActivePath(to, location.pathname);
@@ -33,7 +33,7 @@ export function MobileBottomNav() {
               to={to}
               className={[
                 "flex flex-col items-center justify-center gap-1 py-3 text-xs font-semibold transition-colors",
-                active ? "text-blue-700" : "text-slate-600 hover:text-blue-600",
+                active ? "text-blue-700 dark:text-blue-400" : "text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400",
               ].join(" ")}
               aria-current={active ? "page" : undefined}
             >

@@ -257,8 +257,8 @@ const SkillFormPage = ({ editMode = false }) => {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">Upload offline video</p>
-                        <p className="text-sm text-slate-500">
-                          Upload a short lesson/preview video (mp4/webm/mov). Learners will see it on the skill page.
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Upload a short lesson/preview video (any format). MP4 (H.264) is recommended for best playback everywhere.
                         </p>
                       </div>
                       {form.videoUrl && (
@@ -278,7 +278,7 @@ const SkillFormPage = ({ editMode = false }) => {
                       <label className="mb-1 block text-sm font-medium text-slate-700">Choose video file</label>
                       <input
                         type="file"
-                        accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                        accept="video/*"
                         disabled={videoUploading}
                         onChange={(e) => handleVideoUpload(e.target.files?.[0])}
                         className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"

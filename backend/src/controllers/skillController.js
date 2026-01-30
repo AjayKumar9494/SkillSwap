@@ -22,15 +22,13 @@ const videoAbsolutePathFromSkill = (skill) => {
 
 const getMimeFromFilename = (filename) => {
   const ext = (path.extname(filename || "") || "").toLowerCase();
-  // Return proper MIME types for video formats
-  if (ext === ".mp4") return "video/mp4";
-  if (ext === ".webm") return "video/webm";
-  if (ext === ".ogg" || ext === ".ogv") return "video/ogg";
-  if (ext === ".mov") return "video/quicktime";
-  if (ext === ".avi") return "video/x-msvideo";
-  if (ext === ".mkv") return "video/x-matroska";
-  // Default to mp4 if extension is missing or unknown (most common format)
-  return "video/mp4";
+  const mimeMap = {
+    ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/mp4",
+    ".webm": "video/webm", ".ogg": "video/ogg", ".ogv": "video/ogg",
+    ".avi": "video/x-msvideo", ".mkv": "video/x-matroska",
+    ".wmv": "video/x-ms-wmv", ".flv": "video/x-flv", ".3gp": "video/3gpp",
+  };
+  return mimeMap[ext] || "video/mp4";
 };
 
 const authFromHeaderCookieOrQuery = async (req) => {
