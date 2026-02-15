@@ -17,6 +17,7 @@ const DashboardPage = () => {
   const [allBookings, setAllBookings] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [videoViewCounts, setVideoViewCounts] = useState({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -26,9 +27,31 @@ const DashboardPage = () => {
         api.get("/bookings/mine"),
         api.get("/transactions/mine", { params: { limit: 10 } }),
       ]);
-      setMySkills(skillRes.items || []);
+      const skills = skillRes.items || [];
+      setMySkills(skills);
       setAllBookings(bookingRes || []);
       setTransactions(transactionRes?.items || transactionRes || []);
+
+      // Fetch video view counts for offline skills so views show on dashboard
+      const offlineSkills = skills.filter((s) => s.mode === "offline");
+      if (offlineSkills.length > 0) {
+        const viewPromises = offlineSkills.map(async (skill) => {
+          try {
+            const { data: viewsData } = await api.get(`/skills/${skill._id}/video-views`);
+            return { skillId: skill._id, views: viewsData?.views ?? 0 };
+          } catch {
+            return { skillId: skill._id, views: 0 };
+          }
+        });
+        const results = await Promise.all(viewPromises);
+        const counts = {};
+        results.forEach(({ skillId, views }) => {
+          counts[skillId] = views;
+        });
+        setVideoViewCounts(counts);
+      } else {
+        setVideoViewCounts({});
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -244,7 +267,12 @@ const DashboardPage = () => {
                           transition={{ delay: 0.5 + idx * 0.05 }}
                           whileHover={{ scale: 1.02 }}
                         >
-                          <SkillCard skill={skill} onDelete={handleDeleteSkill} showDelete={true} />
+                          <SkillCard
+                                skill={skill}
+                                onDelete={handleDeleteSkill}
+                                showDelete={true}
+                                viewCount={skill.mode === "offline" ? videoViewCounts[skill._id] : undefined}
+                              />
                         </motion.div>
                       ))}
                     </div>

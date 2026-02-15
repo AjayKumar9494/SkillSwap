@@ -185,11 +185,19 @@ const VideoCallPage = () => {
     try {
       setError("");
       const isMobile = isMobileOrCapacitor();
-      const stream = await navigator.mediaDevices.getUserMedia(
-        isMobile
-          ? { video: true, audio: true }
-          : { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true }
-      );
+      // Higher quality media constraints for better mic audio and video in live sessions
+      const videoConstraints = isMobile
+        ? { width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 }, facingMode: "user" }
+        : { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } };
+      const audioConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: videoConstraints,
+        audio: audioConstraints,
+      });
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;

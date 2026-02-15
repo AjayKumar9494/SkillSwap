@@ -77,6 +77,7 @@ const BookingsPage = () => {
   const [uploadedVideos, setUploadedVideos] = useState([]);
   const [videoViewCounts, setVideoViewCounts] = useState({});
   const [videoSubTab, setVideoSubTab] = useState("downloaded"); // "uploaded" or "downloaded"
+  const [removingVideoAccessId, setRemovingVideoAccessId] = useState(null); // skillId being removed
 
   // Update active tab when URL query parameter changes
   useEffect(() => {
@@ -162,17 +163,32 @@ const BookingsPage = () => {
     }
   };
 
-  const handleDeleteDownloadedVideo = async (skillId) => {
+  const handleDeleteDownloadedVideo = async (unlock) => {
+    const skillId = unlock?.skill?._id ?? unlock?.skill;
+    if (!skillId) {
+      setError("Cannot remove: skill id missing");
+      return;
+    }
     if (!window.confirm("Are you sure you want to remove this video from your downloads? This will remove your access to the video.")) {
       return;
     }
+    setError("");
+    setRemovingVideoAccessId(skillId);
     try {
-      await api.delete(`/skills/${skillId}/video-access`);
+      await api.delete(`/skills/${String(skillId)}/video-access`);
       setNotice("Video access removed successfully");
       setTimeout(() => setNotice(""), 3000);
-      await fetchVideoUnlocks();
+      setVideoUnlocks((prev) => prev.filter((u) => String(u.skill?._id ?? u.skill) !== String(skillId)));
+      setVideoViewCounts((prev) => {
+        const next = { ...prev };
+        delete next[skillId];
+        return next;
+      });
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to remove video access");
+      const msg = err.response?.data?.message || err.message || "Failed to remove video access";
+      setError(msg);
+    } finally {
+      setRemovingVideoAccessId(null);
     }
   };
 
@@ -478,9 +494,14 @@ const BookingsPage = () => {
                               size="sm" 
                               variant="outline"
                               className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-                              onClick={() => handleDeleteDownloadedVideo(unlock.skill?._id)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteDownloadedVideo(unlock);
+                              }}
+                              disabled={removingVideoAccessId != null}
                             >
-                              🗑️ Remove
+                              {removingVideoAccessId != null && String(removingVideoAccessId) === String(unlock.skill?._id ?? unlock.skill) ? "Removing..." : "🗑️ Remove"}
                             </Button>
                           </div>
                         </div>
