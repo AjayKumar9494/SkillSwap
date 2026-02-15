@@ -23,11 +23,19 @@ const videoAbsolutePathFromSkill = (skill) => {
 const getMimeFromFilename = (filename) => {
   const ext = (path.extname(filename || "") || "").toLowerCase();
   const mimeMap = {
-    ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/mp4",
-    ".webm": "video/webm", ".ogg": "video/ogg", ".ogv": "video/ogg",
-    ".avi": "video/x-msvideo", ".mkv": "video/x-matroska",
-    ".wmv": "video/x-ms-wmv", ".flv": "video/x-flv", ".3gp": "video/3gpp",
+    ".mp4": "video/mp4", 
+    ".m4v": "video/mp4", 
+    ".mov": "video/quicktime", // QuickTime format
+    ".webm": "video/webm", 
+    ".ogg": "video/ogg", 
+    ".ogv": "video/ogg",
+    ".avi": "video/x-msvideo", 
+    ".mkv": "video/x-matroska",
+    ".wmv": "video/x-ms-wmv", 
+    ".flv": "video/x-flv", 
+    ".3gp": "video/3gpp",
   };
+  // Default to mp4 for better browser compatibility
   return mimeMap[ext] || "video/mp4";
 };
 
@@ -235,10 +243,26 @@ export const streamSkillVideo = asyncHandler(async (req, res) => {
 
   const filename = String(skill.videoUrl).split("/").pop();
   const filePath = videoAbsolutePathFromSkill(skill);
-  if (!filePath || !fs.existsSync(filePath)) return res.status(404).json({ message: "Video file missing" });
+  
+  // Enhanced error handling for missing files
+  if (!filePath) {
+    return res.status(404).json({ message: "Video file path invalid" });
+  }
+  
+  if (!fs.existsSync(filePath)) {
+    console.error(`Video file not found: ${filePath} for skill ${skill._id}`);
+    return res.status(404).json({ 
+      message: "Video file missing. The file may have been deleted or moved. Please re-upload the video." 
+    });
+  }
 
   const stat = fs.statSync(filePath);
   const fileSize = stat.size;
+  
+  if (fileSize === 0) {
+    return res.status(404).json({ message: "Video file is empty or corrupted" });
+  }
+  
   const range = req.headers.range;
   const contentType = getMimeFromFilename(filename);
 
@@ -255,8 +279,17 @@ export const streamSkillVideo = asyncHandler(async (req, res) => {
   }
   res.setHeader("Accept-Ranges", "bytes");
   res.setHeader("Content-Type", contentType);
-  res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
+  // Allow caching for better performance, but validate freshness
+  res.setHeader("Cache-Control", "public, max-age=3600, must-revalidate");
   res.setHeader("X-Content-Type-Options", "nosniff");
+  // Add ETag for better caching
+  const etag = `"${stat.mtime.getTime()}-${fileSize}"`;
+  res.setHeader("ETag", etag);
+  
+  // Handle If-None-Match for 304 Not Modified
+  if (req.headers["if-none-match"] === etag) {
+    return res.status(304).end();
+  }
   
   // Handle OPTIONS request for CORS preflight
   if (req.method === "OPTIONS") {

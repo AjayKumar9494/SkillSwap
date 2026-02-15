@@ -324,16 +324,16 @@ const SkillDetailsPage = () => {
                                 errorMsg = "Network error. Please check your connection and try again.";
                                 break;
                               case videoEl.error.MEDIA_ERR_DECODE:
-                                errorMsg = "Video decoding error. The file may be corrupted or use an unsupported codec. Try converting to MP4 (H.264).";
+                                errorMsg = "Video decoding error. The file may be corrupted or use an unsupported codec. Try converting to MP4 (H.264) or re-upload the video.";
                                 break;
                               case videoEl.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                                errorMsg = "Video format not supported. Use MP4 (H.264) for best compatibility. Try Retry or re-upload as MP4.";
+                                errorMsg = "Video format not supported. Use MP4 (H.264) for best compatibility. Please re-upload the video in MP4 format.";
                                 break;
                               default:
-                                errorMsg = `Video error (code: ${videoEl.error.code}). Please try again or contact support.`;
+                                errorMsg = `Video error (code: ${videoEl.error.code}). The video file may be missing or corrupted. Please try re-uploading.`;
                             }
                           } else {
-                            errorMsg = "Unable to load video. Please check if you have access and the file exists.";
+                            errorMsg = "Unable to load video. The file may have been deleted or moved. Please contact the teacher to re-upload the video.";
                           }
                           setVideoError(errorMsg);
                           console.error("Video error:", {
